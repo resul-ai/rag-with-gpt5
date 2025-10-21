@@ -1,0 +1,73 @@
+version: '3.9'
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: rag-postgres
+    environment:
+      POSTGRES_USER: rag_user
+      POSTGRES_PASSWORD: rag_password
+      POSTGRES_DB: rag_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag_user -d rag_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+  # RAG API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Database
+      - DATABASE_ASYNC_URL=postgresql+asyncpg://rag_user:rag_password@postgres:5432/rag_db
+      - DATABASE_SYNC_URL=postgresql://rag_user:rag_password@postgres:5432/rag_db
+
+      # OpenAI (loaded from .env)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=gpt-5-nano
+      - OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+
+      # Service Configuration
+      - SERVICE_PORT=8000
+      - SERVICE_HOST=0.0.0.0
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+
+      # LLM Configuration
+      - LLM_TEMPERATURE=0.0
+      - LLM_MAX_TOKENS=2048
+
+      # RAG Configuration
+      - RAG_TOP_K=5
+      - RAG_SIMILARITY_THRESHOLD=0.4
+      - CHUNK_SIZE=1000
+      - CHUNK_OVERLAP=200
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  rag-network:
+    driver: bridge
