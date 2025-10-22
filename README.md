@@ -1,10 +1,10 @@
-# RAG-Anything API
+# RAG-with-GPT5-API
 
 A production-ready, flexible **Retrieval-Augmented Generation (RAG)** API service powered by OpenAI's GPT-5-nano and PostgreSQL with pgvector.
 
 ## 🎯 Overview
 
-RAG-Anything is a RESTful API service that enables intelligent question-answering over your custom knowledge base using state-of-the-art language models and vector similarity search.
+RAG-with-gpt5 is a RESTful API service that enables intelligent question-answering over your custom knowledge base using state-of-the-art language models and vector similarity search.
 
 ### Key Features
 
